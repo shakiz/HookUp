@@ -1,4 +1,4 @@
-package com.shakil.hookup;
+package com.shakil.travelpointer;
 
 import org.junit.Test;
 

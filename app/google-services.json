@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "713976443341",
+    "project_id": "travelpointer-81183",
+    "storage_bucket": "travelpointer-81183.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:713976443341:android:964c0b59bc8820bf7a9484",
+        "android_client_info": {
+          "package_name": "com.shakil.travelpointer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "713976443341-p8ncbpeabg4i920gq4um54br9ll2gfns.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnMIy7iNFglG4VObVASRBFnxUC7EYwbvI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "713976443341-p8ncbpeabg4i920gq4um54br9ll2gfns.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
