@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_place">Search place</string>
+    <string name="find_restaurants">Find Restaurants</string>
+    <string name="unable_to_get_last_location">Unable to get last location</string>
+</resources>
