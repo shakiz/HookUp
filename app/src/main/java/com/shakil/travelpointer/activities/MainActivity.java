@@ -141,8 +141,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 //region get suggestion list
-                FindAutocompletePredictionsRequest predictionsRequest = FindAutocompletePredictionsRequest
-                        .builder()
+                FindAutocompletePredictionsRequest predictionsRequest = FindAutocompletePredictionsRequest.builder()
                         .setTypeFilter(TypeFilter.ADDRESS)
                         .setSessionToken(token)
                         .setQuery(s.toString())
@@ -150,22 +149,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 placesClient.findAutocompletePredictions(predictionsRequest).addOnCompleteListener(new OnCompleteListener<FindAutocompletePredictionsResponse>() {
                     @Override
                     public void onComplete(@NonNull Task<FindAutocompletePredictionsResponse> task) {
-                        if (task.isSuccessful()){
+                        if (task.isSuccessful()) {
                             FindAutocompletePredictionsResponse predictionsResponse = task.getResult();
-                            if (predictionsResponse != null){
+                            if (predictionsResponse != null) {
                                 predictionList = predictionsResponse.getAutocompletePredictions();
-                                List<String> suggestionList = new ArrayList<>();
-                                for (int start = 0; start < predictionList.size(); start++) {
-                                    suggestionList.add(predictionList.get(start).getFullText(null).toString());
+                                List<String> suggestionsList = new ArrayList<>();
+                                for (int i = 0; i < predictionList.size(); i++) {
+                                    AutocompletePrediction prediction = predictionList.get(i);
+                                    suggestionsList.add(prediction.getFullText(null).toString());
                                 }
-                                activityMainBinding.searchBar.updateLastSuggestions(suggestionList);
-                                if (!activityMainBinding.searchBar.isSuggestionsVisible()){
+                                activityMainBinding.searchBar.updateLastSuggestions(suggestionsList);
+                                if (!activityMainBinding.searchBar.isSuggestionsVisible()) {
                                     activityMainBinding.searchBar.showSuggestionsList();
                                 }
                             }
-                        }
-                        else{
-                            Log.i(TAG,"Prediction fetch unsuccessful");
+                        } else {
+                            Log.i("mytag", "prediction fetching task unsuccessful");
                         }
                     }
                 });
@@ -181,44 +180,48 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         activityMainBinding.searchBar.setSuggestionsClickListener(new SuggestionsAdapter.OnItemViewClickListener() {
             @Override
             public void OnItemClickListener(int position, View v) {
-                //region suggestion item click
-                if (position >= predictionList.size()){
+                if (position >= predictionList.size()) {
                     return;
                 }
                 AutocompletePrediction selectedPrediction = predictionList.get(position);
                 String suggestion = activityMainBinding.searchBar.getLastSuggestions().get(position).toString();
                 activityMainBinding.searchBar.setText(suggestion);
 
-                InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                if (inputMethodManager != null){
-                    inputMethodManager.hideSoftInputFromWindow(activityMainBinding.searchBar.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY);
-                }
-                //Fetch place lat long from google place api
-                String placeId = selectedPrediction.getPlaceId();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        activityMainBinding.searchBar.clearSuggestions();
+                    }
+                }, 1000);
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm != null)
+                    imm.hideSoftInputFromWindow(activityMainBinding.searchBar.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY);
+                final String placeId = selectedPrediction.getPlaceId();
                 List<Place.Field> placeFields = Arrays.asList(Place.Field.LAT_LNG);
+
                 FetchPlaceRequest fetchPlaceRequest = FetchPlaceRequest.builder(placeId, placeFields).build();
-                placesClient.fetchPlace(fetchPlaceRequest).addOnSuccessListener(MainActivity.this, new OnSuccessListener<FetchPlaceResponse>() {
+                placesClient.fetchPlace(fetchPlaceRequest).addOnSuccessListener(new OnSuccessListener<FetchPlaceResponse>() {
                     @Override
                     public void onSuccess(FetchPlaceResponse fetchPlaceResponse) {
                         Place place = fetchPlaceResponse.getPlace();
-                        Log.i(TAG,"Place found : "+place.getName());
-                        LatLng latLng = place.getLatLng();
-                        if (latLng != null){
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
+                        Log.i("mytag", "Place found: " + place.getName());
+                        LatLng latLngOfPlace = place.getLatLng();
+                        if (latLngOfPlace != null) {
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLngOfPlace, DEFAULT_ZOOM));
                         }
                     }
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        if (e instanceof ApiException){
+                        if (e instanceof ApiException) {
                             ApiException apiException = (ApiException) e;
                             apiException.printStackTrace();
                             int statusCode = apiException.getStatusCode();
-                            Log.i(TAG, "Place not found : "+e.getMessage()+" Status Code : "+statusCode);
+                            Log.i(TAG, "place not found: " + e.getMessage());
+                            Log.i(TAG, "status code: " + statusCode);
                         }
                     }
                 });
-                //endregion
             }
 
             @Override
@@ -297,6 +300,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
         //endregion
+
+        mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+            @Override
+            public boolean onMyLocationButtonClick() {
+                if (activityMainBinding.searchBar.isSuggestionsVisible())
+                    activityMainBinding.searchBar.clearSuggestions();
+                if (activityMainBinding.searchBar.isSearchEnabled())
+                    activityMainBinding.searchBar.disableSearch();
+                return false;
+            }
+        });
     }
 
     @Override
