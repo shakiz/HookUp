@@ -8,23 +8,34 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.mancj.materialsearchbar.MaterialSearchBar
-            android:id="@+id/searchBar"
-            style="@style/MaterialSearchBarLight"
-            app:mt_speechMode="false"
-            app:mt_hint="@string/search_place"
-            app:mt_maxSuggestionsCount="10"
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            app:mt_navIconEnabled="true"
-            app:mt_placeholder="@string/search_place"
-            android:elevation="8dp"
-            android:outlineProvider="bounds"
-            android:translationZ="4dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"/>
+            app:cardCornerRadius="8dp"
+            android:layout_margin="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:orientation="horizontal"
+                android:background="@drawable/rectangle_shape">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_search"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="8dp"/>
+
+                <Spinner
+                    android:id="@+id/spinnerSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:background="@drawable/rectangle_shape"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <fragment
             android:id="@+id/map"
