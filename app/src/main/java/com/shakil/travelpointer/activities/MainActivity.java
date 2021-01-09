@@ -5,11 +5,13 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -45,6 +47,13 @@ import com.google.android.libraries.places.api.net.PlacesClient;
 import com.shakil.travelpointer.R;
 import com.shakil.travelpointer.databinding.ActivityMainBinding;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 
 import static com.shakil.travelpointer.utils.Constants.DEFAULT_ZOOM;
@@ -66,6 +75,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Location mLastKnownLocation;
     private LocationCallback mLocationCallback;
     private View mapView;
+    private String[] placeSearchType = {"atm","bank","hospital","movie_theatre","restaurant"};
+
+    private double currentLat = 0, currentLng = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +108,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Places.initialize(MainActivity.this, getString(R.string.google_maps_api_key));
         placesClient = Places.createClient(this);
         AutocompleteSessionToken token = AutocompleteSessionToken.newInstance();
+        //endregion
+
+        //region search spinner
+        activityMainBinding.spinnerSearch.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json" +
+                        "?location=" + currentLat + "," + currentLng +
+                        "&radius=5000" +
+                        "&types=" + placeSearchType[position] + 
+                        "&sensor=true" +
+                        "&key=" + getString(R.string.google_maps_api_key);
+                new PlaceTask().execute();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
         //endregion
     }
     //endregion
@@ -197,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         switch (requestCode) {
             case PERMISSIONS_REQUEST_ENABLE_GPS: {
                 if(mLocationPermissionGranted){
+                    getDeviceLocation();
                 }
                 else{
                     getLocationPermission();
@@ -223,6 +256,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     mLastKnownLocation = task.getResult();
                     if (mLastKnownLocation != null){
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude()),DEFAULT_ZOOM));
+                        currentLat = mLastKnownLocation.getLatitude();
+                        currentLng = mLastKnownLocation.getLongitude();
                     }
                     else{
                         LocationRequest locationRequest = LocationRequest.create();
@@ -238,6 +273,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 }
                                 mLastKnownLocation = locationResult.getLastLocation();
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude()),DEFAULT_ZOOM));
+                                currentLat = mLastKnownLocation.getLatitude();
+                                currentLng = mLastKnownLocation.getLongitude();
                                 mFusedLocationProviderClient.removeLocationUpdates(mLocationCallback);
                             }
                         };
@@ -272,4 +309,48 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
     }
+
+    //region get spinner search result
+    private class PlaceTask extends AsyncTask<String, Integer, String> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            String data = downloadUrl(strings[0]);
+            return null;
+        }
+    }
+
+    private String downloadUrl(String fetchUrl) {
+        String data = "";
+        try {
+            URL url = new URL(fetchUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.connect();
+            InputStream stream = connection.getInputStream();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
+            StringBuilder stringBuilder = new StringBuilder();
+            String line = "";
+
+            while ((line = bufferedReader.readLine()) != null){
+                stringBuilder.append(line);
+            }
+            data = stringBuilder.toString();
+            bufferedReader.close();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+    //endregion
 }
