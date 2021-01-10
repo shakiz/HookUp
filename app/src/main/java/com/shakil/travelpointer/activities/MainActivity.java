@@ -36,6 +36,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -46,6 +47,10 @@ import com.google.android.libraries.places.api.model.AutocompleteSessionToken;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.shakil.travelpointer.R;
 import com.shakil.travelpointer.databinding.ActivityMainBinding;
+import com.shakil.travelpointer.utils.JsonParser;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -54,16 +59,17 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.shakil.travelpointer.utils.Constants.DEFAULT_ZOOM;
 import static com.shakil.travelpointer.utils.Constants.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION;
 import static com.shakil.travelpointer.utils.Constants.PERMISSIONS_REQUEST_ENABLE_GPS;
 import static com.shakil.travelpointer.utils.Constants.RESOLVABLE_TASK;
+import static com.shakil.travelpointer.utils.Constants.TAG;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     private ActivityMainBinding activityMainBinding;
-    private static final String TAG = "MainActivity";
     private boolean mLocationPermissionGranted = false;
     private GoogleMap mMap;
     //Provides current location
@@ -75,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Location mLastKnownLocation;
     private LocationCallback mLocationCallback;
     private View mapView;
-    private String[] placeSearchType = {"atm","bank","hospital","movie_theatre","restaurant"};
+    private String[] placeSearchType = {"other","atm","bank","hospital","movie_theatre","restaurant"};
 
     private double currentLat = 0, currentLng = 0;
 
@@ -117,10 +123,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 String url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json" +
                         "?location=" + currentLat + "," + currentLng +
                         "&radius=5000" +
-                        "&types=" + placeSearchType[position] + 
+                        "&types=" + placeSearchType[position] +
                         "&sensor=true" +
                         "&key=" + getString(R.string.google_maps_api_key);
-                new PlaceTask().execute();
+                new PlaceTask().execute(url);
             }
 
             @Override
@@ -318,14 +324,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
+        protected String doInBackground(String... strings) {
+            String data = downloadUrl(strings[0]);
+            return data;
         }
 
         @Override
-        protected String doInBackground(String... strings) {
-            String data = downloadUrl(strings[0]);
-            return null;
+        protected void onPostExecute(String s) {
+            //region execute parser task
+            new ParserTask().execute(s);
+            //endregion
         }
     }
 
@@ -339,7 +347,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
             StringBuilder stringBuilder = new StringBuilder();
             String line = "";
-
             while ((line = bufferedReader.readLine()) != null){
                 stringBuilder.append(line);
             }
@@ -351,6 +358,43 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             e.printStackTrace();
         }
         return data;
+    }
+
+    private class ParserTask extends AsyncTask<String, Integer, List<HashMap<String, String>>>{
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected List<HashMap<String, String>> doInBackground(String... strings) {
+            JsonParser jsonParser = new JsonParser();
+            List<HashMap<String, String>> mapList = null;
+            JSONObject jsonObject = null;
+            try {
+                jsonObject = new JSONObject(strings[0]);
+                mapList = jsonParser.parseResult(jsonObject);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return mapList;
+        }
+
+        @Override
+        protected void onPostExecute(List<HashMap<String, String>> hashMaps) {
+            mMap.clear();
+            for (int start = 0; start < hashMaps.size(); start++) {
+                HashMap<String, String> hashMap = hashMaps.get(start);
+                double lat = Double.parseDouble(hashMap.get("lat"));
+                double lng = Double.parseDouble(hashMap.get("lng"));
+                String name = hashMap.get("name");
+                LatLng latLng = new LatLng(lat, lng);
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLng);
+                markerOptions.title(name);
+                mMap.addMarker(markerOptions);
+            }
+        }
     }
     //endregion
 }

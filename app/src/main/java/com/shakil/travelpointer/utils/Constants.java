@@ -8,4 +8,5 @@ public class Constants {
     public static final int PERMISSIONS_REQUEST_ENABLE_GPS = 9003;
     public static final int RESOLVABLE_TASK = 51;
     public static final float DEFAULT_ZOOM = 18;
+    public static final String TAG = "sakhawat";
 }
